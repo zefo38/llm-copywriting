@@ -1,75 +1,66 @@
-from module import (
-    load_data,
+from data_handler import load_data, preprocess_annual_fee,preprocess_card_data,load_recommendations
+from interest_calculator import (
+    calculate_explicit_interest,
+    calculate_implicit_interest,
     calculate_user_interest_count,
-    merge_user_card_data,
-    calculate_matching_scores,
-    calculate_final_scores,
-    merge_and_sort_scores,
-    select_top_card,
-    prepare_card_info_for_llm
+    merge_interests,
+    filter_card_benefits_by_user_interest
 )
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+from contents import vectorize_card_data, calculate_card_similarity
+from card_recommendation import (calculate_card_scores, 
+                                 select_top_card_with_low_fee,
+                                 get_most_similar_cards,
+                                 add_user_interest_to_recommendations)
+import pandas as pd
+from ad_generator import generate_ads_for_user
+
 
 def main():
+    # 카드 정보 데이터 로드
+    card_info = pd.read_csv("data/카드정보.csv")
     # 데이터 로드
-    log, customer, card, card_category, small_category, large_category = load_data()
+    CategoryOfInterest, log, CardCategory, AnnualFee,MainCategory = load_data()
 
-    # 사용자 관심도 계산
-    user_interest_count = calculate_user_interest_count(log)
+    # 연회비 데이터 전처리
+    AnnualFee = preprocess_annual_fee(AnnualFee)
 
-    # 카드-사용자 데이터 병합
-    card_data = merge_user_card_data(card, customer)
+    # 관심도 계산
+    explicit_interest = calculate_explicit_interest(CategoryOfInterest)
+    implicit_interest = calculate_implicit_interest(log)
+    combined_interest = merge_interests(explicit_interest, implicit_interest)
 
-    # 매칭 점수 계산
-    matching_card_df = calculate_matching_scores(card_data, log, user_interest_count)
+    # 사용자별 관심 카테고리 수 추가
+    user_interest_count = calculate_user_interest_count(combined_interest)
+    combined_interest = pd.merge(combined_interest, user_interest_count, on='userId', how='left')
+    # 카드별 점수 계산
+    card_scores = calculate_card_scores(CardCategory, combined_interest)
 
-    # 최종 점수 집계
-    final_scores = calculate_final_scores(matching_card_df)
+    # 사용자별 최적 카드 추천
+    top_cards = select_top_card_with_low_fee(card_scores, AnnualFee)
 
-    # 점수 병합 및 정렬
-    sorted_data = merge_and_sort_scores(final_scores, card)
 
-    # 사용자별 최적 카드 선택
-    top_card = select_top_card(sorted_data)
+#        # 데이터 전처리
+    card_ctg_list = preprocess_card_data(CardCategory, MainCategory)
+#     print(card_ctg_list)
+#     # 카드 혜택 벡터화
+    ctg_matrix, feature_names = vectorize_card_data(card_ctg_list)
 
-    print(top_card)
-    # LLM에서 user_id를 입력받아 매칭된 카드 가져오기
-    # user_id = 1
-    # user_filtered_card = top_card[top_card['userId'] == int(user_id)]
+#     # 카드 간 유사도 계산
+    similarity_df = calculate_card_similarity(ctg_matrix, card_ctg_list)
 
-    # if user_filtered_card.empty:
-    #     print(f"해당 user_id({user_id})와 매칭된 카드가 없습니다.")
-    #     return
+#     # 사용자별로 유사 카드 추천
+    recommendations = get_most_similar_cards(top_cards, similarity_df, num_similar=3)
 
-    # # LLM 입력 데이터 준비
-    # llm_input = prepare_card_info_for_llm(user_filtered_card, card_category)
+    # 추천 카드에서 사용자 관심 혜택 필터링
+    filtered_recommendations = add_user_interest_to_recommendations(recommendations, combined_interest, card_ctg_list)
 
-    # LLM 입력 데이터 준비
-    llm_input = prepare_card_info_for_llm(top_card, card_category)
+        # 사용자 입력 받기
+    user_id = int(input("Enter the user ID: ").strip())
 
-    # LLM 모델 설정
-    llm = ChatOpenAI(
-        model_name="gpt-4o-mini",
-        temperature=0.7,
-        streaming=True
-    )
+    # 사용자 ID로 광고 생성
+    ad_results = generate_ads_for_user(user_id, filtered_recommendations, card_info)
 
-    # 프롬프트 템플릿
-    prompt_template = """
-    당신은 뛰어난 광고 카피라이터입니다. 주어진 카드 정보와 혜택을 바탕으로 창의적이고 감동적인 카피라이팅 문구를 제작하는 것이 역할입니다.
-    {llm_input}
-    작성할 문구:
-    """
-    prompt = PromptTemplate(input_variables=["llm_input"], template=prompt_template)
-
-    # LLM Chain 생성
-    llm_chain = LLMChain(llm=llm, prompt=prompt)
-
-    # LLM 실행
-    response = llm_chain.run({"llm_input": llm_input})
-    print("생성된 광고 문구:\n", response)
-
+    # 결과 출력
+    print(ad_results)
 if __name__ == "__main__":
     main()

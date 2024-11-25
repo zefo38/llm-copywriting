@@ -2,8 +2,10 @@ import os
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 import pandas as pd
-from langchain.schema.runnable import RunnableMap
+from dotenv import load_dotenv
 
+load_dotenv()
+os.environ['OPENAI_API_KEY'] = os.getenv("OPENAI_API_KEY")
 
 # 사용자별 필터링된 카드 데이터로 광고 문구 생성
 def generate_ads_for_user(user_id, filtered_recommendations, card_info):
@@ -66,6 +68,7 @@ def generate_advertising_copy(card_name, benefits):
     - 카드의 주요 혜택 여러개 강조
     - 감성적 또는 실용적 요소
     - 이모티콘으로 생동감 추가
+    - 40대 남성이 친근감을 느낄만한 문구로 제작
 
     카드 정보:
     - 카드 이름: {card_name}
@@ -84,4 +87,4 @@ def generate_advertising_copy(card_name, benefits):
     formatted_input = {"card_name": card_name, "benefits": benefits}
     response = llm_chain.invoke(formatted_input)
 
-    return response
+    return str(response)

@@ -63,49 +63,27 @@ def get_most_similar_cards(top_cards, similarity_df, num_similar=3):
     return pd.DataFrame(recommendations)
 
 # 추천된 카드에서 사용자 관심사 기반 혜택 필터링
-def add_user_interest_to_recommendations(recommendations, combined_interest, card_ctg_list):
+def add_user_interest_to_recommendations(recommendations, combined_interest, card_ctg_list,main_category):
     filtered_recommendations = []
 
     for _, rec in recommendations.iterrows():
         user_id = rec['userId']
         recommended_card_id = rec['recommended_cardId']
-
+        
         # 카드 데이터 필터링
         card_data = card_ctg_list[card_ctg_list['cardId'] == recommended_card_id]
 
         # 사용자 관심 카테고리에 해당하는 카드만 선택
         filtered_cards = filter_card_benefits_by_user_interest(user_id, combined_interest, card_data)
-        
+        filtered_cards["intersectionMapped"] = filtered_cards["intersection"].apply(
+    lambda ids: [main_category.loc[main_category["mainCtgId"] == int(id), "mainCtgName"].values[0] for id in ids]
+)
         if not filtered_cards.empty:
             filtered_recommendations.append({
                 "userId": user_id,
                 "recommended_cardId": recommended_card_id,
-                "mainCtgNameListStr": filtered_cards.iloc[0]['mainCtgNameListStr']
+                "mainCtgNameListStr": filtered_cards.iloc[0]['intersectionMapped']
             })
-
+        print(f"해당하는 DF 확인 : {filtered_cards}")
     return pd.DataFrame(filtered_recommendations)
 
-def get_user_recommendations(user_id, recommendations, card_ctg_list):
-    # 사용자 추천 카드 가져오기
-    card_info = pd.read_csv("data/카드정보.csv")
-    user_recommendations = recommendations[recommendations['userId'] == user_id]
-    card_ctg_list = pd.merge(card_ctg_list, card_info[['cardId', 'cardName']], on='cardId', how='left')
-    # 카드 이름과 혜택 매핑
-    ad_results = []
-    for _, rec in user_recommendations.iterrows():
-        card_id = rec['recommended_cardId']
-        card_data = card_ctg_list[card_ctg_list['cardId'] == card_id]
-
-        if not card_data.empty:
-            card_name = card_data.iloc[0]['cardName']  # 카드 이름 또는 ID
-            benefits = card_data.iloc[0]['mainCtgNameListStr']  # 혜택 문자열
-
-            # 광고 문구 생성
-            ad_copy = generate_advertising_copy(card_name, benefits)
-            ad_results.append({
-                "cardId": card_id,
-                "cardName": card_name,
-                "benefits": benefits,
-                "adCopy": ad_copy
-            })
-    return pd.DataFrame(ad_results)

@@ -4,7 +4,6 @@ from interest_calculator import (
     calculate_implicit_interest,
     calculate_user_interest_count,
     merge_interests,
-    filter_card_benefits_by_user_interest
 )
 from contents import vectorize_card_data, calculate_card_similarity
 from card_recommendation import (calculate_card_scores, 
@@ -39,9 +38,8 @@ def main():
     top_cards = select_top_card_with_low_fee(card_scores, AnnualFee)
 
 
-#        # 데이터 전처리
+       # 데이터 전처리
     card_ctg_list = preprocess_card_data(CardCategory, MainCategory)
-#     print(card_ctg_list)
 #     # 카드 혜택 벡터화
     ctg_matrix, feature_names = vectorize_card_data(card_ctg_list)
 
@@ -52,15 +50,15 @@ def main():
     recommendations = get_most_similar_cards(top_cards, similarity_df, num_similar=3)
 
     # 추천 카드에서 사용자 관심 혜택 필터링
-    filtered_recommendations = add_user_interest_to_recommendations(recommendations, combined_interest, card_ctg_list)
+    filtered_recommendations = add_user_interest_to_recommendations(recommendations, combined_interest, card_ctg_list,MainCategory)
 
         # 사용자 입력 받기
     user_id = int(input("Enter the user ID: ").strip())
 
     # 사용자 ID로 광고 생성
     ad_results = generate_ads_for_user(user_id, filtered_recommendations, card_info)
-
+    pd.set_option('display.max_colwidth', None)
     # 결과 출력
-    print(ad_results)
+    print(ad_results[["userId", "adCopy"]])
 if __name__ == "__main__":
     main()

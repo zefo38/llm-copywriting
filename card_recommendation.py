@@ -37,21 +37,21 @@ def select_top_card_with_low_fee(card_scores, annual_fee_data):
 
 
 # 사용자별로 가장 유사한 카드 찾기
-def get_most_similar_cards(top_cards, similarity_df, num_similar=3):
+def get_most_similar_cards(top_cards, similarity_df, num_similar=2):
     recommendations = []
 
     for _, row in top_cards.iterrows():
         user_id = row['userId']
         card_id = row['cardId']
 
-        # 유사도가 높은 카드를 찾고 정렬
+        # 유사도가 높은 카드를 찾고 정렬 (자기 자신 포함)
         similar_cards = similarity_df.loc[card_id].sort_values(ascending=False)
 
-        # 추천 카드 수 제한 (자기 자신 제외)
-        similar_cards = similar_cards[similar_cards.index != card_id].head(num_similar)
+        # 자기 자신 카드를 포함하고 num_similar개의 카드만 선택
+        top_similar_cards = similar_cards.head(num_similar)
 
         # 추천 결과 저장
-        for similar_card_id, similarity in similar_cards.items():
+        for similar_card_id, similarity in top_similar_cards.items():
             recommendations.append({
                 "userId": user_id,
                 "original_cardId": card_id,

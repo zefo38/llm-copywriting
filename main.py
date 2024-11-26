@@ -69,6 +69,7 @@ def get_advertisement(user_id):
         # 사용자별로 유사 카드 추천
         recommendations = get_most_similar_cards(top_cards, similarity_df, num_similar=3)
 
+        print(recommendations)
         # 추천 카드에서 사용자 관심 혜택 필터링
         filtered_recommendations = add_user_interest_to_recommendations(
             recommendations, combined_interest, card_ctg_list, MainCategory

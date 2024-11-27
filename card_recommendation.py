@@ -63,7 +63,7 @@ def get_most_similar_cards(top_cards, similarity_df, num_similar=2):
     return pd.DataFrame(recommendations)
 
 # 추천된 카드에서 사용자 관심사 기반 혜택 필터링
-def add_user_interest_to_recommendations(recommendations, combined_interest, card_ctg_list,main_category):
+def add_user_interest_to_recommendations(recommendations, combined_interest, card_ctg_list,Category):
     filtered_recommendations = []
 
     for _, rec in recommendations.iterrows():
@@ -76,7 +76,7 @@ def add_user_interest_to_recommendations(recommendations, combined_interest, car
         # 사용자 관심 카테고리에 해당하는 카드만 선택
         filtered_cards = filter_card_benefits_by_user_interest(user_id, combined_interest, card_data)
         filtered_cards["intersectionMapped"] = filtered_cards["intersection"].apply(
-    lambda ids: [main_category.loc[main_category["mainCtgId"] == int(id), "mainCtgName"].values[0] for id in ids]
+    lambda ids: [Category.loc[Category["mainCtgId"] == int(id), "mainCtgName"].values[0] for id in ids]
 )
         if not filtered_cards.empty:
             filtered_recommendations.append({

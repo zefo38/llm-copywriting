@@ -1,4 +1,4 @@
-from data_handler import load_data, preprocess_annual_fee,preprocess_card_data,load_recommendations
+from data_handler import load_data, preprocess_annual_fee,preprocess_card_data
 from interest_calculator import (
     calculate_explicit_interest,
     calculate_implicit_interest,
@@ -22,16 +22,16 @@ CategoryOfInterest = None
 log = None
 CardCategory = None
 AnnualFee = None
-MainCategory = None
+Category = None
 combined_interest = None
 
 # 데이터 로드 및 전처리 함수
 def setup_data():
-    global card_info, CategoryOfInterest, log, CardCategory, AnnualFee, MainCategory, combined_interest
+    global card_info, CategoryOfInterest, log, CardCategory, AnnualFee, Category, combined_interest
 
     # 카드 정보 데이터 로드
     card_info = pd.read_csv("data/카드정보.csv")
-    CategoryOfInterest, log, CardCategory, AnnualFee, MainCategory = load_data()
+    CategoryOfInterest, log, CardCategory, AnnualFee, Category = load_data()
 
     # 연회비 데이터 전처리
     AnnualFee = preprocess_annual_fee(AnnualFee)
@@ -58,7 +58,7 @@ def get_advertisement(user_id):
         top_cards = select_top_card_with_low_fee(card_scores, AnnualFee)
 
         # 데이터 전처리
-        card_ctg_list = preprocess_card_data(CardCategory, MainCategory)
+        card_ctg_list = preprocess_card_data(CardCategory, Category)
 
         # 카드 혜택 벡터화
         ctg_matrix, feature_names = vectorize_card_data(card_ctg_list)
@@ -72,7 +72,7 @@ def get_advertisement(user_id):
         print(recommendations)
         # 추천 카드에서 사용자 관심 혜택 필터링
         filtered_recommendations = add_user_interest_to_recommendations(
-            recommendations, combined_interest, card_ctg_list, MainCategory
+            recommendations, combined_interest, card_ctg_list, Category
         )
 
         # 광고 생성

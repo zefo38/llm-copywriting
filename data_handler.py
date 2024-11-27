@@ -4,7 +4,7 @@ from interest_calculator import filter_card_benefits_by_user_interest
 # CSV 데이터 로드
 def load_data():
     CategoryOfInterest = pd.read_csv('data/CategoryOfInterest.csv')
-    log = pd.read_csv('data/Processed_Click_Log_Data.csv')
+    log = pd.read_csv('data/log.csv')
     CardCategory = pd.read_csv('data/CardCategory.csv')
     AnnualFee = pd.read_csv('data/카드실적.csv')
     Category = pd.read_csv('data/Category.csv')
@@ -24,18 +24,20 @@ def extract_domestic_fee(fee_string):
 def preprocess_annual_fee(annual_fee_data):
     annual_fee_data['domestic_fee'] = annual_fee_data['annualfee'].apply(extract_domestic_fee)
     return annual_fee_data
+
+
 # 카드와 대분류 데이터 병합 및 전처리
 def preprocess_card_data(CardCategory, Category):
     # 카드 데이터와 대분류 데이터 병합
-    card = pd.merge(CardCategory, Category, how='left', on='mainCtgId')
+    card = pd.merge(CardCategory, Category, how='left', on='categoryId')
 
     # 카드별 mainCtgName과 mainCtgId 리스트 생성
     card_ctg_list = card.groupby('cardId').agg({
-        'mainCtgId': list,
-        'mainCtgName': list
+        'categoryId': list,
+        'categoryName': list
     }).reset_index()
     # 리스트 데이터를 문자열로 변환
-    card_ctg_list['mainCtgNameListStr'] = card_ctg_list['mainCtgName'].apply(lambda x: " ".join(x))
+    card_ctg_list['mainCtgNameListStr'] = card_ctg_list['categoryName'].apply(lambda x: " ".join(x))
     
     return card_ctg_list
 

@@ -4,14 +4,14 @@ from interest_calculator import filter_card_benefits_by_user_interest
 
 # 카드별 점수 계산
 def calculate_card_scores(card_category, combined_interest):
-    card_category_grouped = card_category.groupby('cardId')['mainCtgId'].apply(list).reset_index()
+    card_category_grouped = card_category.groupby('cardId')['categoryId'].apply(list).reset_index()
     scores = []
     for _, card_row in card_category_grouped.iterrows():
         card_id = card_row['cardId']
-        card_main_ctgs = card_row['mainCtgId']
+        card_main_ctgs = card_row['categoryId']
         for _, user_row in combined_interest.iterrows():
             user_id = user_row['userId']
-            user_main_ctg = user_row['mainCtgId']
+            user_main_ctg = user_row['categoryId']
             if user_main_ctg in card_main_ctgs:
                 score = (
                     user_row['explicit_interest'] +
@@ -76,7 +76,7 @@ def add_user_interest_to_recommendations(recommendations, combined_interest, car
         # 사용자 관심 카테고리에 해당하는 카드만 선택
         filtered_cards = filter_card_benefits_by_user_interest(user_id, combined_interest, card_data)
         filtered_cards["intersectionMapped"] = filtered_cards["intersection"].apply(
-    lambda ids: [Category.loc[Category["mainCtgId"] == int(id), "mainCtgName"].values[0] for id in ids]
+    lambda ids: [Category.loc[Category["categoryId"] == int(id), "categoryName"].values[0] for id in ids]
 )
         if not filtered_cards.empty:
             filtered_recommendations.append({

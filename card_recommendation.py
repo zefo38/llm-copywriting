@@ -23,17 +23,9 @@ def calculate_card_scores(card_category, combined_interest):
 
 # 사용자별 최고 점수 + 낮은 연회비 카드 선택
 def select_top_card_with_low_fee(card_scores, annual_fee_data):
-    card_scores = pd.merge(card_scores, annual_fee_data[['cardId', 'domestic_fee']], on='cardId', how='left')
-
-    def select_best_card(group):
-        max_score = group['category_score'].max()
-        top_cards = group[group['category_score'] == max_score]
-        if len(top_cards) > 1:
-            return top_cards.loc[top_cards['domestic_fee'].idxmin()]
-        return top_cards.iloc[0]
-
-    top_cards = card_scores.groupby('userId').apply(select_best_card).reset_index(drop=True)
-    return top_cards[['userId', 'cardId', 'category_score', 'domestic_fee']]
+    # 상위 점수 카드 중 연회비가 낮은 카드 선택
+    card_scores = card_scores.sort_values(by=['score'], ascending=False)
+    return card_scores.head(5)  # 상위 5개 카드 반환
 
 
 # 사용자별로 가장 유사한 카드 찾기

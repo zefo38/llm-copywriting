@@ -8,33 +8,18 @@ load_dotenv()
 os.environ['OPENAI_API_KEY'] = os.getenv("OPENAI_API_KEY")
 
 # 사용자별 필터링된 카드 데이터로 광고 문구 생성
-def generate_ads_for_user(user_id, filtered_recommendations, card_info):
-    # 사용자 ID에 해당하는 최종 추천 카드 3개 필터링
-    user_recommendations = filtered_recommendations[filtered_recommendations['userId'] == user_id].head(3)
-    ad_results = []
-
-    for _, row in user_recommendations.iterrows():
-        card_id = row['recommended_cardId']
-        benefits = row['mainCtgNameListStr']
-        print(benefits)
-        # 카드 이름 가져오기
-        card_name_row = card_info[card_info['cardId'] == card_id]
-        if not card_name_row.empty:
-            card_name = card_name_row.iloc[0]['cardName']
-        else:
-            card_name = f"Card-{card_id}"  # 이름이 없을 경우 fallback
-
-        # 광고 문구 생성
-        ad_copy = generate_advertising_copy(card_name, benefits)
-        ad_results.append({
-            "userId": user_id,
-            "cardId": card_id,
-            "cardName": card_name,
-            "benefits": benefits,
+def generate_ads_for_user(recommendations):
+    ads = []
+    for _, card in recommendations.iterrows():
+        # 카드 이름과 첫 번째 혜택의 카테고리 이름을 광고 문구로 사용
+        ad_copy = f"{card['cardName']}로 {card['benefits'][0]['categoryName']} 혜택을 누리세요!"
+        ads.append({
+            "cardId": card['cardId'],  # 카드 ID 추가 (필요하면)
             "adCopy": ad_copy
         })
+    return pd.DataFrame(ads)
 
-    return pd.DataFrame(ad_results)
+
 
 
 

@@ -1,50 +1,30 @@
+import requests
 import pandas as pd
-import re
-from interest_calculator import filter_card_benefits_by_user_interest
-# CSV 데이터 로드
-def load_data():
-    CategoryOfInterest = pd.read_csv('data/CategoryOfInterest.csv')
-    log = pd.read_csv('data/log.csv')
-    CardCategory = pd.read_csv('data/CardCategory.csv')
-    AnnualFee = pd.read_csv('data/카드실적.csv')
-    Category = pd.read_csv('data/Category.csv')
 
-    return CategoryOfInterest, log, CardCategory, AnnualFee, Category
+BASE_URL = "http://example.com/api"  # 실제 API URL로 변경
 
-# 연회비 데이터에서 국내 연회비 추출
-def extract_domestic_fee(fee_string):
-    match = re.search(r'국내 (?:(\d+)만)?(\d*)천?원?', fee_string)
-    if match:
-        ten_thousand = int(match.group(1)) * 10000 if match.group(1) else 0
-        thousand = int(match.group(2)) * 1000 if match.group(2) else 0
-        return ten_thousand + thousand
-    return 0
+def load_user_interest_data():
+    try:
+        # 사용자 관심 데이터 가져오기
+        category_response = requests.post(f"{BASE_URL}/category-of-interest")
+        category_data = category_response.json()
+        CategoryOfInterest = pd.DataFrame(category_data)
 
-# 연회비 데이터 전처리
-def preprocess_annual_fee(annual_fee_data):
-    annual_fee_data['domestic_fee'] = annual_fee_data['annualfee'].apply(extract_domestic_fee)
-    return annual_fee_data
+        # 사용자 행동 로그 가져오기
+        log_response = requests.post(f"{BASE_URL}/logs")
+        log_data = log_response.json()
+        Log = pd.DataFrame(log_data)
+
+        return CategoryOfInterest, Log
+    except requests.RequestException as e:
+        raise RuntimeError(f"Failed to fetch user interest data: {str(e)}")
 
 
-# 카드와 대분류 데이터 병합 및 전처리
-def preprocess_card_data(CardCategory, Category):
-    # 카드 데이터와 대분류 데이터 병합
-    card = pd.merge(CardCategory, Category, how='left', on='categoryId')
-
-    # 카드별 mainCtgName과 mainCtgId 리스트 생성
-    card_ctg_list = card.groupby('cardId').agg({
-        'categoryId': list,
-        'categoryName': list
-    }).reset_index()
-    # 리스트 데이터를 문자열로 변환
-    card_ctg_list['mainCtgNameListStr'] = card_ctg_list['categoryName'].apply(lambda x: " ".join(x))
-    
-    return card_ctg_list
-
-# 카드 혜택과 사용자 관심 병합
-def get_filtered_card_data(user_id, combined_interest, card_ctg_list):
-    filtered_cards = filter_card_benefits_by_user_interest(user_id, combined_interest, card_ctg_list)
-
-    # 카드 ID, 이름, 혜택 필드만 유지
-    filtered_cards = filtered_cards[['cardId', 'mainCtgNameListStr']]
-    return filtered_cards
+def load_card_data():
+    try:
+        # 전체 카드 데이터 가져오기
+        response = requests.post(f"{BASE_URL}/cards-with-benefits", json={})
+        card_data = response.json()
+        return pd.DataFrame(card_data)
+    except requests.RequestException as e:
+        raise RuntimeError(f"Failed to fetch card data: {str(e)}")
